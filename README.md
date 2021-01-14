@@ -8,5 +8,6 @@ this project, but the goal is for this project to evole into an IPS.
 - create a baseline for a specified environment
 
 #Little TODO'S:
+- Make this readme better
 - finish decoding options to icmpv6
 - decode icmpv4
