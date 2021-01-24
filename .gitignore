@@ -3,3 +3,4 @@ test.py
 __pycache__/*
 log/*
 catchet_packet_copy.py
+packet_cap.py
