@@ -3,6 +3,21 @@ import struct
 from utils.hex_dump import xdump
 from utils.checksum import verify_checksum
 
+"""
+Notes:
+    Neighbor Discovery:
+        * neighbor discovery in ipv6 is what ARP is to ipv4.
+        * ipv6 has no broadcasts, it uses multicasts frequently.
+        * neighbor advertisement and solicitation use multicast to discover other systems.
+        * router advertisement and solicitation use multicast to discover other routers.
+    Addresses:
+        * localhost - ::1/128
+        * Unique Local Addresses(ULA) - fc00::/7  (equivelant ipv4 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16)
+        * Link-Local Adressess - fe80::/10  (equivelant ipv4 169.254.0.0/16)
+        * Global Addresss(Teredo) - 2001::1000::/32
+        * Global Addresses(6to4) - 2002::/16
+"""
+
 
 class ICMPv6_Packet:
 

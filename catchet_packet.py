@@ -10,7 +10,7 @@ import socket
 import sys
 from time import time, asctime, localtime
 
-from protocols import Ethernet, IPv4Header, IPv6Header, TCPIP_Packet, TCPHeader
+from protocols import Ethernet, IPv4Header, IPv6Header, TCPIP_Packet
 from icmp import ICMP_Packet
 from icmpv6 import ICMPv6_Packet
 try:
@@ -46,7 +46,7 @@ usage = """
                     addr=[ip address]
                     proto=[protocol]
 
-            protocols: eth, ipv4, ipv6, icmpv6, tcp
+            protocols: eth, ipv4, icmpv4, ipv6, icmpv6, tcp
     }
 """
 
@@ -70,8 +70,24 @@ if len(sys.argv) > 1:
                     fport = arg.split("=")[1]
                     filter_port = True
                 elif re.match(r"proto=\w", arg):
+                    fproto_dic = {
+                        "eth": False,
+                        "ipv4": False,
+                        "icmpv4": False,
+                        "ipv6": False,
+                        "icmpv6": False,
+                        "tcp": False
+                    }
                     fproto = arg.split("=")[1]
-                    filter_proto = True
+                    fproto = fproto.split(",")  
+                    if len(fproto) > 1:
+                        for p in fproto:
+                            fproto_dic[p.lower()] = True
+                    elif len(fproto) == 1:
+                        fproto_dic[fproto[0]] = True
+                    else:
+                        print(usage)
+            filter_proto = True
 else:
     print(usage)
 
@@ -101,7 +117,8 @@ tcp_json_pkt_dump = defaultdict(list)
 
 s = socket.socket(socket.PF_PACKET, socket.SOCK_RAW)
 s.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 2**30)
-s.bind(("lo", 3))
+s.bind(("wlp2s0", 3))
+
 
 try: 
     while True:
@@ -110,42 +127,43 @@ try:
             e = Ethernet(data)
             if filter_proto == True and str(fproto).lower() == "eth":
                 filter_packets["eth"].append(str(e))
-            if print_flag == True:
-                print(str(e))
+            if print_flag == True and filter_proto == True:
+                if fproto == "eth":
+                    print(str(e))
             if e.etype[0] == "IPv4":
                 ipv4 = IPv4Header(data)
-                if print_flag == True:
-                    print(str(ipv4))
-                    if ipv4.protocol[1] == 6:
-                        tcp = TCPIP_Packet(data)
-                        print(str(tcp))
-                    if ipv4.protocol[1] == 1:
-                        icmpv4 = ICMP_Packet(data, ipv4.internet_header_len)
-                        print(str(icmpv4))
-                if save_flag == True:
-                    if ipv4.protocol[1] == 6:
-                        tcp = TCPIP_Packet(data)
+                if ipv4.protocol[1] == 1:
+                    icmpv4 = ICMP_Packet(data, ipv4.internet_header_len)
+                    if print_flag == True:
+                        if filter_proto == True:
+                            if fproto_dic["eth"] == True:
+                                print(str(e))
+                            if fproto_dic["ipv4"] == True:
+                                print(str(ipv4))
+                            if fproto_dic["icmpv4"] == True:
+                                print(str(icmpv4))
+                        else:
+                            print(str(e))
+                            print(str(ipv4))
+                            print(str(icmpv4))
+                    if save_flag == True:
+                        ipv4_packet_by_src_dst[ipv4.src_addr].append(str(e))
+                        ipv4_packet_by_src_dst[ipv4.src_addr].append(str(ipv4))
+                        ipv4_packet_by_src_dst[ipv4.src_addr].append(str(icmpv4))
+                elif ipv4.protocol[1] == 6:
+                    tcp = TCPIP_Packet(data)
+                    if print_flag == True:
+                        if filter_proto == True:
+                            if fproto_dic["eth"] == True:
+                                print(str(e))
+                            if fproto_dic["ipv4"] == True:
+                                print(str(ipv4))
+                            if fproto_dic["tcp"] == True:
+                                print(str(tcp.tcp))
+                        else:
+                            print(str(tcp))
+                    if save_flag == True:
                         ipv4_packet_by_src_dst[(tcp.ip.src_addr, tcp.ip.dst_addr)].append(str(tcp))
-                    if ipv4.protocol[1] == 1:
-                        icmpv4 = ICMP_Packet(data, int(tcp.ip.internet_header_len))
-                        ipv4_packet_by_src_dst[(ipv4.src_addr, ipv4.dst_addr)].append(str(e))
-                        ipv4_packet_by_src_dst[(ipv4.src_addr, ipv4.dst_addr)].append(str(ipv4))
-                        ipv4_packet_by_src_dst[(ipv4.src_addr, ipv4.dst_addr)].append(str(icmpv4))
-                if filter_addr == True:
-                    if filter_port == True:
-                        if tcp.ip.dst_addr == faddr and tcp.tcp.dst_port == int(fport):
-                            filter_packets[(faddr, fport)].append(str(tcp))
-                    else:
-                        if tcp.ip.dst_addr == faddr:
-                            filter_packets[faddr].append(str(tcp))
-                if filter_port == True:
-                    if tcp.tcp.dst_port == fport:
-                        filter_packets[str(fport)].append(str(tcp))
-                if filter_proto == True:
-                    if str(fproto).lower() == "ipv4":
-                        filter_packets["ipv4"].append(str(ipv4))
-                    elif str(fproto).lower() == "tcp":
-                        filter_packets["tcp"].append(str(tcp.tcp))
                 if json_flag == True:
                     tcp_json_pkt_dump[(str(tcp.ip.src_addr) + "," + str(tcp.ip.dst_addr))].append(tcp.json_obj())
             if e.etype[0] == "IPv6":
@@ -155,17 +173,21 @@ try:
                 if json_flag == True:
                     ipv6_json_pkt_dump[(str(ipv6.src_addr) + "," + str(ipv6.dst_addr))].append(ipv6.json_obj())
                 if print_flag == True:
-                    print(str(ipv6))
-                if filter_proto == True and str(fproto).lower() == "ipv6":
-                    filter_packets["ipv6"].append(str(ipv6))
+                    if filter_proto == True:
+                        if fproto_dic["ipv6"] == True:
+                            print(str(ipv6))
+                    else:
+                        print(str(ipv6))
                 if ipv6.next_header[1] == 58:
                     icmpv6 = ICMPv6_Packet(data)
-                    if filter_proto == True and str(fproto).lower() == "icmpv6":
-                        filter_packets["icmpv6"].append(str(icmpv6))
+                    if print_flag == True:
+                        if filter_proto == True:
+                            if fproto_dic["icmpv6"] == True:
+                                print(str(icmpv6))
+                        else:
+                            print(str(icmpv6))
                     if save_flag == True:
                         ipv6_packet_by_src_dst[(ipv6.src_addr, ipv6.dst_addr)].append(str(icmpv6))
-                    if print_flag == True:
-                        print(str(icmpv6))
         except Exception as err:
             print(err)
             logger.debug(err)
@@ -178,20 +200,28 @@ except Exception as err:
     print(err)
 finally:
     if save_flag == True:
-        text_dumpdir = dumptimedir + "/text"
-        if not os.path.exists(text_dumpdir):
-            os.mkdir(text_dumpdir)
-            os.chmod(text_dumpdir, MODE)
-        if len(tcp_packet_by_src_dst) > 0:
-            for i, ps in tcp_packet_by_src_dst.items():
-                fn = text_dumpdir + "/{}".format(i)
+        save_dir = dumptimedir + "/text"
+        ipv4_dumpdir = save_dir + "/ipv4"
+        ipv6_dumpdir = save_dir + "/ipv6"
+        if not os.path.exists(save_dir):
+            os.mkdir(save_dir)
+            os.chmod(save_dir, MODE)
+        if len(ipv4_packet_by_src_dst) > 0:
+            if not os.path.exists(ipv4_dumpdir):
+                os.mkdir(ipv4_dumpdir)
+                os.chmod(ipv4_dumpdir, MODE)
+            for i, ps in ipv4_packet_by_src_dst.items():
+                fn = ipv4_dumpdir + "/{}".format(i)
                 with open(fn, "w") as fh:
                     for p in ps:
                         fh.write(p)
                         fh.write("\n")
         if len(ipv6_packet_by_src_dst) > 0:
+            if not os.path.exists(ipv6_dumpdir):
+                os.mkdir(ipv6_dumpdir)
+                os.chmod(ipv6_dumpdir, MODE)
             for i, ps in ipv6_packet_by_src_dst.items():
-                fn = text_dumpdir + "/{}".format(i)
+                fn = ipv6_dumpdir + "/{}".format(i)
                 with open(fn, "w") as fh:
                     for p in ps:
                         fh.write(p)

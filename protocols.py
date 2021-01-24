@@ -3,7 +3,7 @@ import json
 import socket
 import struct
 
-from packet import ethr_hdr, ip_hdr, ipv6_hdr, tcp_hdr
+from utils.packet_json import ethr_hdr, ip_hdr, ipv6_hdr, tcp_hdr
 from utils.hex_dump import xdump
 from utils.checksum import verify_checksum
 
@@ -735,7 +735,7 @@ class TCPHeader:
         """
 
 
-class TCP_Packet:
+class TCPIP_Packet:
     def __init__(self, frame):
         self.eth = Ethernet(frame)
         self.ip = IPv4Header(frame)
