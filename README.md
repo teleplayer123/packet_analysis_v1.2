@@ -8,6 +8,10 @@ this project, but the goal is for this project to evolve into an IPS.
 - create a baseline for a specified environment
 
 #Little TODO'S:
-- Make this readme better
-- finish decoding options to icmpv6
-- decode icmpv4
+- make this readme better (usage sample)
+- finish decoding options for icmpv6
+- finish decoding icmpv4 headers
+
+#Medium TODO's:
+- make storage.py script relevant or scrap it
+- create base class for building packets
