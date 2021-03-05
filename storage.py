@@ -4,7 +4,7 @@ import os
 from time import time, asctime, localtime
 
 from config import USER, MODE
-from protocols import IPv4Header, IPv6Header, TCP_Packet, TCPHeader
+from protocols import IPv4Header, IPv6Header, TCPIP_Packet, TCPHeader
 from icmpv6 import ICMPv6_Packet
 
 class Storage:
@@ -49,4 +49,4 @@ class Storage:
             for addrs, ps in hdr_dict.items():
                 fn = json_dumpdir + "/{}.json".format(addrs)
                 with open(fn, "w") as fp:
-                    json.dump(hdr_dict[addrs], fp)
+                    json.dump(ps, fp)

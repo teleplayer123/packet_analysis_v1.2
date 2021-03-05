@@ -90,6 +90,7 @@ if len(sys.argv) > 1:
             filter_proto = True
 else:
     print(usage)
+    sys.exit(1)
 
 current_date = date.fromtimestamp(time())
 cap_dir = "/home/{}/captures".format(USER)
@@ -117,7 +118,7 @@ tcp_json_pkt_dump = defaultdict(list)
 
 s = socket.socket(socket.PF_PACKET, socket.SOCK_RAW)
 s.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 2**30)
-s.bind(("wlp2s0", 3))
+s.bind(("lo", 3))
 
 
 try: 

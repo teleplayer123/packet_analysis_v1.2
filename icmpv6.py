@@ -404,9 +404,9 @@ class ICMPv6_NeighborAdvertisment:
         Type(136): {self.type[0]} ({self.type[1]})
         Code(0): {self.code}
         Checksum: {self.checksum}
-        Router Flag(set=1,not=0): {self.router_flag}
-        Solicited Flag(set=1,not=0): {self.solicited_flag}
-        Override Flag(set=1,not=0): {self.override_flag}
+        Router Flag({"set" if self.router_flag == 1 else "not set"}): {self.router_flag}
+        Solicited Flag({"set" if self.solicited_flag == 1 else "not set"}): {self.solicited_flag}
+        Override Flag({"set" if self.override_flag == 1 else "not set"}): {self.override_flag}
         Reserved(0): {self.reserved}
         Target Address: {self.target_addr}
         """

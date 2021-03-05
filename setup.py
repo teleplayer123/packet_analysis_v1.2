@@ -4,7 +4,7 @@ import os
 
 
 uid = os.getuid()
-mode = 0o700
+mode = 0o777 #poor permission security for ease of debugging, should be hardened
 user = getpass.getuser()
 data = {}
 if user == "root":
@@ -13,7 +13,7 @@ if user == "root":
 
 data["uid"] = uid
 data["user"] = user
-data["mode"] = 0o777
+data["mode"] = mode 
 
 cwd = os.getcwd()
 config_dir = os.path.join(cwd, "config")

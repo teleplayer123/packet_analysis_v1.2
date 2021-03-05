@@ -5,7 +5,7 @@ import threading
 import sys
 
 from config import USER
-from packet import ip_hdr, ipv6_hdr, tcp_hdr, ethr_hdr
+from utils.packet_json import ip_hdr, ipv6_hdr, tcp_hdr, ethr_hdr
 
 #todo
 
