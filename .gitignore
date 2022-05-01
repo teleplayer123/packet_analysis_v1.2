@@ -1,0 +1,8 @@
+.vscode/*
+test.py
+*__pycache__/*
+log/*
+send_packet.py
+post_analysis.py
+config.yaml
+config/*
