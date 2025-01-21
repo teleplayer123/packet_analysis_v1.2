@@ -1,5 +1,3 @@
-#!/usr/bin/python3.9
-
 from collections import defaultdict
 from datetime import date
 import json
@@ -24,7 +22,7 @@ logger.setLevel(logging.DEBUG)
 
 if not os.path.exists("log"):
     os.mkdir("log")
-handle = logging.FileHandler("log/pktcap_exception.log")
+handle = logging.FileHandler(os.path.join("log", "pktcap_exception.log"))
 fmt = logging.Formatter(fmt="%(asctime)s - %(levelname)s - %(module)s - %(message)s")
 handle.setFormatter(fmt)
 logger.addHandler(handle)
@@ -97,9 +95,14 @@ else:
     sys.exit(1)
 
 current_date = date.fromtimestamp(time())
-cap_dir = "/home/{}/captures".format(USER)
-dumpdir = "/home/{}/captures/{}".format(USER, current_date)
-dumptimedir = dumpdir + "/{}".format(asctime(localtime()))
+if os.name == "nt":
+    cap_dir = "C:\\Users\\{}\\captures".format(USER)
+    dumpdir = "C:\\Users\\{}\\captures\\{}".format(USER, current_date)
+    dumptimedir = os.path.join(dumpdir, "{}".format("-".join(asctime(localtime()).split()).replace(":", "-")))   
+else:    
+    cap_dir = "/home/{}/captures".format(USER)
+    dumpdir = "/home/{}/captures/{}".format(USER, current_date)
+    dumptimedir = dumpdir + "/{}".format(asctime(localtime()))
 
 if not os.path.exists(cap_dir):
     os.mkdir(cap_dir)
@@ -121,8 +124,14 @@ ipv6_packet_by_src_dst = defaultdict(list)
 ipv6_json_pkt_dump = defaultdict(list)
 tcp_json_pkt_dump = defaultdict(list)
 
-s = socket.socket(socket.PF_PACKET, socket.SOCK_RAW)
+
+if os.name == "nt":
+    s = socket.socket(socket.AF_INET, socket.SOCK_RAW)
+    #s.setsockopt(socket.IPPROTO_IP, socket.IP_HDRINCL, 1)
+else:
+    s = socket.socket(socket.PF_PACKET, socket.SOCK_RAW)
 s.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 2**30)
+
 s.bind((INTERFACE, TYPE))
 
 
@@ -220,10 +229,10 @@ except Exception as err:
     print(err)
 finally:
     if save_flag == True:
-        save_dir = dumptimedir + "/text"
-        ipv4_dumpdir = save_dir + "/ipv4"
-        ipv6_dumpdir = save_dir + "/ipv6"
-        arp_dumpdir = save_dir + "/arp"
+        save_dir = os.path.join(dumptimedir, "text")
+        ipv4_dumpdir = os.path.join(save_dir, "ipv4")
+        ipv6_dumpdir = os.path.join(save_dir, "ipv6")
+        arp_dumpdir = os.path.join(save_dir, "arp")
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
             os.chmod(save_dir, MODE)
@@ -232,7 +241,7 @@ finally:
                 os.mkdir(ipv4_dumpdir)
                 os.chmod(ipv4_dumpdir, MODE)
             for i, ps in ipv4_packet_by_src_dst.items():
-                fn = ipv4_dumpdir + "/{}".format(i)
+                fn = os.path.join(ipv4_dumpdir, "{}".format(i))
                 with open(fn, "w") as fh:
                     for p in ps:
                         fh.write(p)
@@ -242,7 +251,7 @@ finally:
                 os.mkdir(arp_dumpdir)
                 os.chmod(arp_dumpdir, MODE)
             for i, ps in arp_packet_by_src_dst.items():
-                fn = arp_dumpdir + "/{}".format(i)
+                fn = os.path.join(arp_dumpdir, "{}".format(i))
                 with open(fn, "w") as fh:
                     for p in ps:
                         fh.write(p)
@@ -252,36 +261,35 @@ finally:
                 os.mkdir(ipv6_dumpdir)
                 os.chmod(ipv6_dumpdir, MODE)
             for i, ps in ipv6_packet_by_src_dst.items():
-                fn = ipv6_dumpdir + "/{}".format(i)
+                fn = os.path.join(ipv6_dumpdir, "{}".format(i))
                 with open(fn, "w") as fh:
                     for p in ps:
                         fh.write(p)
                         fh.write("\n") 
     if json_flag == True:
-        json_dumpdir = dumptimedir + "/json"
+        json_dumpdir = os.path.join(dumptimedir, "json")
         if not os.path.exists(json_dumpdir):
             os.mkdir(json_dumpdir)
             os.chmod(json_dumpdir, MODE)
         if len(tcp_json_pkt_dump) > 0:
             for addrs, ps in tcp_json_pkt_dump.items():
-                fn = json_dumpdir + "/{}.json".format(addrs)
+                fn = os.path.join(json_dumpdir, "{}.json".format(addrs))
                 with open(fn, "w") as fp:
                     json.dump(tcp_json_pkt_dump[addrs], fp)
         if len(ipv6_json_pkt_dump) > 0:
             for addrs, ps in ipv6_json_pkt_dump.items():
-                fn = json_dumpdir + "/{}.json".format(addrs)
+                fn = os.path.join(json_dumpdir, "{}.json".format(addrs))
                 with open(fn, "w") as fp:
                     json.dump(ipv6_json_pkt_dump[addrs], fp)
     if len(filter_packets) > 0:
-        filter_dir = dumptimedir + "/filtered"
+        filter_dir = os.path.join(dumptimedir, "filtered")
         if not os.path.exists(filter_dir):
             os.mkdir(filter_dir)
             os.chmod(filter_dir, MODE)
         for addr, ps in filter_packets.items():
-            fn = filter_dir + "/{}".format(addr)
+            fn = os.path.join(filter_dir, "{}".format(addr))
             with open(fn, "w") as fh:
                 for p in ps:
                     fh.write(p)
                     fh.write("\n")
-                
     sys.exit()

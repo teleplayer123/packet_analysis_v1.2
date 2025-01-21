@@ -4,7 +4,10 @@ import os
 import sys
 from yaml import full_load
 
-uid = os.getuid()
+if os.name == "nt":
+    uid = 0
+else:
+    uid = os.getuid()
 mode = 0o777 #poor permission security for ease of debugging, should be hardened
 user = getpass.getuser()
 data = {}
